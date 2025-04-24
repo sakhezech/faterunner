@@ -41,11 +41,13 @@ class SubproccessAction:
 
 
 class Task:
-    def __init__(self, opts: Opts | None = None) -> None:
+    def __init__(
+        self, actions: list[Action], opts: Opts | None = None
+    ) -> None:
         if not opts:
             opts = Opts()
 
-        self.actions: list[Action] = []
+        self.actions = actions
         self.opts = opts
 
     def run(self, opts: Opts | None = None) -> None:
@@ -56,11 +58,15 @@ class Task:
 
 
 class TaskManager:
-    def __init__(self, opts: Opts | None = None) -> None:
+    def __init__(
+        self, tasks: dict[str, Task] | None = None, opts: Opts | None = None
+    ) -> None:
+        if not tasks:
+            tasks = {}
         if not opts:
             opts = Opts()
 
-        self.tasks: dict[str, Task] = {}
+        self.tasks = tasks
         self.opts = opts
 
     def add(self, name: str, task: Task) -> None:
