@@ -9,11 +9,21 @@ _parsers = {
 }
 
 
+def guess_file() -> Path:
+    return Path('./pyproject.toml')
+
+
+def guess_parser(file: Path) -> str:
+    if file.name == 'pyproject.toml':
+        return 'pyproject'
+    raise Exception(f"couldn't guess parser for file: {file}")
+
+
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument('--parser', choices=_parsers.keys())
     parser.add_argument('-f', '--file', type=Path)
-    parser.add_argument('target')
+    parser.add_argument('target', nargs='?')
     return parser
 
 
@@ -21,7 +31,16 @@ def cli(argv: Sequence[str] | None = None) -> None:
     parser = make_parser()
     args = parser.parse_args(argv)
 
+    if args.file is None:
+        args.file = guess_file()
+    if args.parser is None:
+        args.parser = guess_parser(args.file)
+
     manager = _parsers[args.parser](args.file.read_text())
+
+    if args.target is None:
+        args.target = tuple(manager.tasks.keys())[0]
+
     manager.run(args.target)
 
 
