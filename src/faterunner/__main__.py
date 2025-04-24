@@ -6,18 +6,30 @@ from typing import NoReturn, Sequence
 from . import parsers
 
 _parsers = {
-    'pyproject': parsers.pyproject_parser,
+    'pyproject': parsers.PyprojectParser(),
 }
 
 
-def guess_file() -> Path:
-    return Path('./pyproject.toml')
+def guess_file_and_parser() -> tuple[Path, str]:
+    for name, parser in _parsers.items():
+        file = parser.find_config_file()
+        if file:
+            return file, name
+    raise ValueError
+
+
+def guess_file(parser: str) -> Path:
+    file = _parsers[parser].find_config_file()
+    if file:
+        return file
+    raise ValueError
 
 
 def guess_parser(file: Path) -> str:
-    if file.name == 'pyproject.toml':
-        return 'pyproject'
-    raise Exception(f"couldn't guess parser for file: {file}")
+    for name, parser in _parsers.items():
+        if parser.validate_file_name(file):
+            return name
+    raise ValueError
 
 
 def make_parser() -> argparse.ArgumentParser:
@@ -33,12 +45,14 @@ def cli(argv: Sequence[str] | None = None) -> None:
     parser = make_parser()
     args = parser.parse_args(argv)
 
-    if args.file is None:
-        args.file = guess_file()
-    if args.parser is None:
+    if args.file is None and args.parser is None:
+        args.file, args.parser = guess_file_and_parser()
+    elif args.file is None:
+        args.file = guess_file(args.parser)
+    elif args.parser is None:
         args.parser = guess_parser(args.file)
 
-    manager = _parsers[args.parser](args.file.read_text())
+    manager = _parsers[args.parser].parse(args.file.read_text())
 
     if args.list:
         print_and_exit('Targets:', *manager.tasks.keys(), exit_code=0)

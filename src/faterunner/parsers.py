@@ -1,29 +1,50 @@
 import shlex
+from pathlib import Path
 from typing import Mapping
 
 from . import SubproccessAction, Task, TaskManager
 
 
-def pyproject_parser(
-    string: str, tool_name: str = 'faterunner'
-) -> TaskManager:
-    import tomllib
+class PyprojectParser:
+    def __init__(self, tool_name: str = 'faterunner') -> None:
+        self.tool_name = tool_name
 
-    manager = TaskManager()
+    def parse(self, string: str) -> TaskManager:
+        import tomllib
 
-    conf = tomllib.loads(string)
+        manager = TaskManager()
 
-    assert 'tool' in conf
-    assert tool_name in conf['tool']
+        conf = tomllib.loads(string)
 
-    tool_config = conf['tool'][tool_name]
-    assert isinstance(tool_config, Mapping)
+        assert 'tool' in conf
+        assert self.tool_name in conf['tool']
 
-    for name, action_strings in tool_config.items():
-        actions = [
-            SubproccessAction(shlex.split(action_string))
-            for action_string in action_strings
-        ]
-        manager.add(name, Task(actions))
+        tool_config = conf['tool'][self.tool_name]
+        assert isinstance(tool_config, Mapping)
 
-    return manager
+        for name, action_strings in tool_config.items():
+            actions = [
+                SubproccessAction(shlex.split(action_string))
+                for action_string in action_strings
+            ]
+            manager.add(name, Task(actions))
+
+        return manager
+
+    def validate_file_name(self, file: Path) -> bool:
+        return file.name == 'pyproject.toml'
+
+    # validates if this is the file we want to choose
+    # for example a pyproject.toml file can be our configuration file
+    # if it has [tool.faterunner...] section, and if it doesn't we should
+    # look elsewhere
+    # TODO: maybe rename, i am not sure
+    def validate_choice(self, file: Path) -> bool:
+        # HACK: quick and dirty and wrong, fix
+        return f'[tool.{self.tool_name}' in file.read_text()
+
+    def find_config_file(self) -> Path | None:
+        for file in Path.cwd().iterdir():
+            if self.validate_file_name(file) and self.validate_choice(file):
+                return file
+        return None
