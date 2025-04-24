@@ -1,0 +1,25 @@
+[project]
+name = 'faterunner'
+readme = 'README.md'
+license = 'MIT'
+dynamic = ['version']
+
+[project.optional-dependencies]
+dev = ['ruff']
+
+[project.scripts]
+fate = 'faterunner.__main__:cli'
+
+[tool.ruff]
+line-length = 79
+[tool.ruff.format]
+quote-style = 'single'
+[tool.ruff.lint]
+extend-select = ['I', 'E501']
+
+[tool.hatch.version]
+path = 'src/faterunner/__version__.py'
+
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
