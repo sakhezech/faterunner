@@ -1,6 +1,7 @@
 import argparse
+import sys
 from pathlib import Path
-from typing import Sequence
+from typing import NoReturn, Sequence
 
 from . import parsers
 
@@ -23,6 +24,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument('--parser', choices=_parsers.keys())
     parser.add_argument('-f', '--file', type=Path)
+    parser.add_argument('-l', '--list', action='store_true')
     parser.add_argument('target', nargs='?')
     return parser
 
@@ -38,10 +40,19 @@ def cli(argv: Sequence[str] | None = None) -> None:
 
     manager = _parsers[args.parser](args.file.read_text())
 
+    if args.list:
+        print_and_exit('Targets:', *manager.tasks.keys(), exit_code=0)
+
     if args.target is None:
         args.target = tuple(manager.tasks.keys())[0]
 
     manager.run(args.target)
+
+
+def print_and_exit(*values, exit_code: int = 1) -> NoReturn:
+    file = sys.stdout if exit_code == 0 else sys.stderr
+    print(*values, file=file)
+    sys.exit(exit_code)
 
 
 if __name__ == '__main__':
