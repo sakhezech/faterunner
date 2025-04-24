@@ -34,7 +34,9 @@ class SubproccessAction:
         opts = self.opts | opts
 
         proc = subprocess.run(
-            self.cmd, stdout=subprocess.DEVNULL if opts.silent else None
+            self.cmd,
+            stdout=subprocess.DEVNULL if opts.silent else None,
+            stderr=subprocess.DEVNULL if opts.silent else None,
         )
         if not opts.ignore_err:
             proc.check_returncode()
