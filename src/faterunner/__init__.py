@@ -1,6 +1,6 @@
 import dataclasses
 import subprocess
-from typing import Protocol, Sequence
+from typing import MutableMapping, Protocol, Sequence
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -42,7 +42,7 @@ class SubproccessAction:
 
 class Task:
     def __init__(
-        self, actions: list[Action], opts: Opts | None = None
+        self, actions: Sequence[Action], opts: Opts | None = None
     ) -> None:
         if not opts:
             opts = Opts()
@@ -59,7 +59,9 @@ class Task:
 
 class TaskManager:
     def __init__(
-        self, tasks: dict[str, Task] | None = None, opts: Opts | None = None
+        self,
+        tasks: MutableMapping[str, Task] | None = None,
+        opts: Opts | None = None,
     ) -> None:
         if not tasks:
             tasks = {}
