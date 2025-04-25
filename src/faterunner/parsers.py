@@ -3,7 +3,7 @@ import shlex
 from pathlib import Path
 from typing import Mapping
 
-from . import Manager, SubproccessAction, Task
+from . import Manager, Opts, SubproccessAction, Task
 
 
 class Parser(abc.ABC):
@@ -29,8 +29,6 @@ class PyprojectParser(Parser):
     def parse(self, string: str) -> Manager:
         import tomllib
 
-        manager = Manager()
-
         conf = tomllib.loads(string)
 
         assert 'tool' in conf
@@ -38,6 +36,13 @@ class PyprojectParser(Parser):
 
         tool_config = conf['tool'][self.tool_name]
         assert isinstance(tool_config, Mapping)
+
+        if 'options' in tool_config:
+            assert isinstance(tool_config['options'], Mapping)
+            opts = Opts(**tool_config['options'])
+        else:
+            opts = None
+        manager = Manager(opts=opts)
 
         assert isinstance(tool_config['targets'], Mapping)
         for name, action_strings in tool_config['targets'].items():
