@@ -3,12 +3,12 @@ import shlex
 from pathlib import Path
 from typing import Mapping
 
-from . import SubproccessAction, Task, TaskManager
+from . import Manager, SubproccessAction, Task
 
 
 class Parser(abc.ABC):
     @abc.abstractmethod
-    def parse(self, string: str) -> TaskManager: ...
+    def parse(self, string: str) -> Manager: ...
     @abc.abstractmethod
     def validate_file_name(self, file: Path) -> bool: ...
     @abc.abstractmethod
@@ -25,10 +25,10 @@ class PyprojectParser(Parser):
     def __init__(self, tool_name: str = 'faterunner') -> None:
         self.tool_name = tool_name
 
-    def parse(self, string: str) -> TaskManager:
+    def parse(self, string: str) -> Manager:
         import tomllib
 
-        manager = TaskManager()
+        manager = Manager()
 
         conf = tomllib.loads(string)
 

@@ -59,7 +59,7 @@ class Task:
             _ = action.run(opts)
 
 
-class TaskManager:
+class Manager:
     def __init__(
         self,
         tasks: MutableMapping[str, Task] | None = None,
