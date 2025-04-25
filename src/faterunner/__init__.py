@@ -1,6 +1,6 @@
 import dataclasses
 import subprocess
-from typing import MutableMapping, Protocol, Sequence
+from typing import Iterable, MutableMapping, Protocol, Sequence
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -71,13 +71,31 @@ class TaskManager:
             opts = Opts()
 
         self.tasks = tasks
+        self.deps: dict[str, Iterable[str]] = {}
         self.opts = opts
 
-    def add(self, name: str, task: Task) -> None:
+    def add(
+        self, name: str, task: Task, deps: Iterable[str] | None = None
+    ) -> None:
+        if deps is None:
+            deps = []
+
         self.tasks[name] = task
+        self.deps[name] = deps
 
     def run(self, name: str, opts: Opts | None = None) -> None:
         opts = self.opts | opts
 
-        task = self.tasks[name]
-        task.run(opts)
+        self._run(name, opts, set())
+
+    def _run(self, name: str, opts: Opts, already_run: set[str]) -> None:
+        if name in already_run:
+            return
+
+        deps = self.deps.get(name)
+        if deps:
+            for dep in deps:
+                self._run(dep, opts, already_run)
+
+        self.tasks[name].run(opts)
+        already_run.add(name)
