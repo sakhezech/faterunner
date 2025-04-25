@@ -25,6 +25,7 @@ class PyprojectParser(Parser):
     def __init__(self, tool_name: str = 'faterunner') -> None:
         self.tool_name = tool_name
 
+    # TODO: change assert to normal check and exceptions
     def parse(self, string: str) -> Manager:
         import tomllib
 
@@ -38,7 +39,8 @@ class PyprojectParser(Parser):
         tool_config = conf['tool'][self.tool_name]
         assert isinstance(tool_config, Mapping)
 
-        for name, action_strings in tool_config.items():
+        assert isinstance(tool_config['targets'], Mapping)
+        for name, action_strings in tool_config['targets'].items():
             actions = [
                 SubproccessAction(shlex.split(action_string))
                 for action_string in action_strings
