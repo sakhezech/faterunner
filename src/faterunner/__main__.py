@@ -5,7 +5,7 @@ from typing import NoReturn, Sequence
 
 from . import parsers
 
-_parsers = {
+_parsers: dict[str, parsers.Parser] = {
     'pyproject': parsers.PyprojectParser(),
 }
 

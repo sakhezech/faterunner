@@ -1,3 +1,4 @@
+import abc
 import shlex
 from pathlib import Path
 from typing import Mapping
@@ -5,7 +6,22 @@ from typing import Mapping
 from . import SubproccessAction, Task, TaskManager
 
 
-class PyprojectParser:
+class Parser(abc.ABC):
+    @abc.abstractmethod
+    def parse(self, string: str) -> TaskManager: ...
+    @abc.abstractmethod
+    def validate_file_name(self, file: Path) -> bool: ...
+    @abc.abstractmethod
+    def validate_choice(self, file: Path) -> bool: ...
+
+    def find_config_file(self) -> Path | None:
+        for file in Path.cwd().iterdir():
+            if self.validate_file_name(file) and self.validate_choice(file):
+                return file
+        return None
+
+
+class PyprojectParser(Parser):
     def __init__(self, tool_name: str = 'faterunner') -> None:
         self.tool_name = tool_name
 
@@ -42,9 +58,3 @@ class PyprojectParser:
     def validate_choice(self, file: Path) -> bool:
         # HACK: quick and dirty and wrong, fix
         return f'[tool.{self.tool_name}' in file.read_text()
-
-    def find_config_file(self) -> Path | None:
-        for file in Path.cwd().iterdir():
-            if self.validate_file_name(file) and self.validate_choice(file):
-                return file
-        return None
