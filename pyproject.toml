@@ -17,6 +17,10 @@ quote-style = 'single'
 [tool.ruff.lint]
 extend-select = ['I', 'E501']
 
+[tool.faterunner.targets]
+check = ['ruff check .', 'ruff format --check .']
+format = ['ruff check --fix .', 'ruff format .']
+
 [tool.hatch.version]
 path = 'src/faterunner/__version__.py'
 
