@@ -3,6 +3,8 @@ import shlex
 from pathlib import Path
 from typing import Mapping
 
+import tomllib
+
 from . import Manager, Opts, SubproccessAction, Task
 
 
@@ -27,8 +29,6 @@ class PyprojectParser(Parser):
 
     # TODO: change assert to normal check and exceptions
     def parse(self, string: str) -> Manager:
-        import tomllib
-
         conf = tomllib.loads(string)
 
         assert 'tool' in conf
@@ -63,5 +63,6 @@ class PyprojectParser(Parser):
     # look elsewhere
     # TODO: maybe rename, i am not sure
     def validate_choice(self, file: Path) -> bool:
-        # HACK: quick and dirty and wrong, fix
-        return f'[tool.{self.tool_name}' in file.read_text()
+        string = file.read_text()
+        conf = tomllib.loads(string)
+        return 'tool' in conf and self.tool_name in conf['tool']
