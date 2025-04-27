@@ -33,13 +33,16 @@ class SubproccessAction:
     def run(self, opts: Opts | None = None) -> None:
         opts = self.opts | opts
 
-        proc = subprocess.run(
-            self.cmd,
-            stdout=subprocess.DEVNULL if opts.silent else None,
-            stderr=subprocess.DEVNULL if opts.silent else None,
-        )
-        if not opts.ignore_err:
+        try:
+            proc = subprocess.run(
+                self.cmd,
+                stdout=subprocess.DEVNULL if opts.silent else None,
+                stderr=subprocess.DEVNULL if opts.silent else None,
+            )
             proc.check_returncode()
+        except (OSError, subprocess.CalledProcessError) as err:
+            if not opts.ignore_err:
+                raise err
 
 
 class Task:
