@@ -2,7 +2,7 @@ import dataclasses
 import subprocess
 from typing import Iterable, MutableMapping, Protocol, Sequence
 
-from .exceptions import DependencyError, FateError
+from .exceptions import ActionError, DependencyError, FateError
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -49,9 +49,7 @@ class SubproccessAction:
             # i.e. we can't let it go to Manager._run where all the logging is
             # so we have to log it here ourselves
             if not opts.ignore_err:
-                # TODO: somehow reraise as ActionError
-                # without losing the original repr
-                raise err
+                raise ActionError(err)
             # TODO: logging here
 
 
@@ -140,8 +138,7 @@ class Manager:
         # NOTE: i think all the error logging should be done here
         # at least for all errors that are supposed to crash
         # i.e. not ignore_err errors
-        # TODO: catch (DependencyError, ActionError)
-        except Exception as err:
+        except (DependencyError, ActionError) as err:
             failed.add(name)
             exceptions.add(err)
             # TODO: logging here

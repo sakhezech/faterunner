@@ -3,7 +3,12 @@ class FateError(Exception):
 
 
 class ActionError(FateError):
-    pass
+    def __init__(self, err: Exception) -> None:
+        self.err = err
+        super().__init__(err)
+
+    def __str__(self) -> str:
+        return self.err.__str__()
 
 
 class DependencyError(FateError):
