@@ -2,11 +2,14 @@ import dataclasses
 import subprocess
 from typing import Iterable, MutableMapping, Protocol, Sequence
 
+from .exceptions import DependencyError, FateError
+
 
 @dataclasses.dataclass(kw_only=True)
 class Opts:
     silent: bool | None = None
     ignore_err: bool | None = None
+    keep_going: bool | None = None
 
     def __or__(self, other: 'Opts | None') -> 'Opts':
         if other is None:
@@ -41,8 +44,15 @@ class SubproccessAction:
             )
             proc.check_returncode()
         except (OSError, subprocess.CalledProcessError) as err:
+            # because ignore_err is supposed to suppress any error in execution
+            # we have to deal with it here
+            # i.e. we can't let it go to Manager._run where all the logging is
+            # so we have to log it here ourselves
             if not opts.ignore_err:
+                # TODO: somehow reraise as ActionError
+                # without losing the original repr
                 raise err
+            # TODO: logging here
 
 
 class Task:
@@ -89,16 +99,53 @@ class Manager:
     def run(self, name: str, opts: Opts | None = None) -> None:
         opts = self.opts | opts
 
-        self._run(name, opts, set())
+        exceptions = self._run(name, opts, set(), set(), set())
+        if exceptions:
+            # TODO: raise other type of err
+            raise FateError(*exceptions)
 
-    def _run(self, name: str, opts: Opts, already_run: set[str]) -> None:
+    def _run(
+        self,
+        name: str,
+        opts: Opts,
+        already_run: set[str],
+        failed: set[str],
+        exceptions: set[Exception],
+    ) -> set[Exception]:
         if name in already_run:
-            return
-
-        deps = self.deps.get(name)
-        if deps:
-            for dep in deps:
-                self._run(dep, opts, already_run)
-
-        self.tasks[name].run(opts)
+            return exceptions
         already_run.add(name)
+
+        deps = self.deps.get(name, [])
+        for dep in deps:
+            self._run(dep, opts, already_run, failed, exceptions)
+
+        try:
+            failed_deps = [dep for dep in deps if dep in failed]
+            if failed_deps:
+                raise DependencyError(
+                    f'dependencies failed: {" ".join(failed_deps)}'
+                )
+
+            # NOTE: i don't know if we can even hit this condition
+            # but i think we should check regardless
+            # we can't run a task if the deps are not satisfied
+            not_run_deps = [dep for dep in deps if dep not in already_run]
+            if not_run_deps:
+                raise DependencyError(
+                    f'dependencies not run: {" ".join(not_run_deps)}'
+                )
+            self.tasks[name].run(opts)
+
+        # NOTE: i think all the error logging should be done here
+        # at least for all errors that are supposed to crash
+        # i.e. not ignore_err errors
+        # TODO: catch (DependencyError, ActionError)
+        except Exception as err:
+            failed.add(name)
+            exceptions.add(err)
+            # TODO: logging here
+            if not opts.keep_going:
+                raise err
+
+        return exceptions
