@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import NoReturn, Sequence
 
 from . import parsers
+from .exceptions import GuessError
 
 _parsers: dict[str, parsers.Parser] = {
     'pyproject': parsers.PyprojectParser(),
@@ -15,21 +16,21 @@ def guess_file_and_parser() -> tuple[Path, str]:
         file = parser.find_config_file()
         if file:
             return file, name
-    raise ValueError
+    raise GuessError("couldn't guess file and parser")
 
 
 def guess_file(parser: str) -> Path:
     file = _parsers[parser].find_config_file()
     if file:
         return file
-    raise ValueError
+    raise GuessError(f"couldn't guess the file for parser: {parser}")
 
 
 def guess_parser(file: Path) -> str:
     for name, parser in _parsers.items():
         if parser.validate_file_name(file):
             return name
-    raise ValueError
+    raise GuessError(f"couldn't guess the parser for file: {file}")
 
 
 def make_parser() -> argparse.ArgumentParser:
@@ -45,12 +46,15 @@ def cli(argv: Sequence[str] | None = None) -> None:
     parser = make_parser()
     args = parser.parse_args(argv)
 
-    if args.file is None and args.parser is None:
-        args.file, args.parser = guess_file_and_parser()
-    elif args.file is None:
-        args.file = guess_file(args.parser)
-    elif args.parser is None:
-        args.parser = guess_parser(args.file)
+    try:
+        if args.file is None and args.parser is None:
+            args.file, args.parser = guess_file_and_parser()
+        elif args.file is None:
+            args.file = guess_file(args.parser)
+        elif args.parser is None:
+            args.parser = guess_parser(args.file)
+    except GuessError as err:
+        print_and_exit(err.args[0])
 
     manager = _parsers[args.parser].parse(args.file.read_text())
 
