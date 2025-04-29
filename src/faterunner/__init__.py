@@ -30,7 +30,7 @@ class Action(Protocol):
     def run(self, opts: Opts | None = None) -> None: ...
 
 
-class SubproccessAction:
+class SubprocessAction:
     def __init__(self, cmd: str, opts: Opts | None = None) -> None:
         if not opts:
             opts = Opts()

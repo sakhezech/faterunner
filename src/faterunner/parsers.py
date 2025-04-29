@@ -4,7 +4,7 @@ from typing import Mapping
 
 import tomllib
 
-from . import Manager, Opts, SubproccessAction, Task
+from . import Manager, Opts, SubprocessAction, Task
 
 
 class Parser(abc.ABC):
@@ -46,7 +46,7 @@ class PyprojectParser(Parser):
         assert isinstance(tool_config['targets'], Mapping)
         for name, action_strings in tool_config['targets'].items():
             actions = [
-                SubproccessAction(action_string)
+                SubprocessAction(action_string)
                 for action_string in action_strings
             ]
             manager.add(name, Task(actions))
