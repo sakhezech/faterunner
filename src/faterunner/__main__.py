@@ -35,8 +35,26 @@ def guess_parser(file: Path) -> str:
 
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
+
+    opts_group = parser.add_argument_group()
+    opts_group.add_argument(
+        '--silent',
+        action=argparse.BooleanOptionalAction,
+    )
+    opts_group.add_argument(
+        '--ignore-err',
+        action=argparse.BooleanOptionalAction,
+    )
+    opts_group.add_argument(
+        '--keep-going',
+        action=argparse.BooleanOptionalAction,
+    )
+    opts_group.add_argument(
+        '--dry',
+        action=argparse.BooleanOptionalAction,
+    )
+
     parser.add_argument('--parser', choices=_parsers.keys())
-    parser.add_argument('--dry', action='store_true')
     parser.add_argument('-f', '--file', type=Path)
     parser.add_argument('-l', '--list', action='store_true')
     parser.add_argument('target', nargs='?')
@@ -65,7 +83,12 @@ def cli(argv: Sequence[str] | None = None) -> None:
     if args.target is None:
         args.target = tuple(manager.tasks.keys())[0]
 
-    opts = Opts(dry=args.dry)
+    opts = Opts(
+        silent=args.silent,
+        ignore_err=args.ignore_err,
+        keep_going=args.keep_going,
+        dry=args.dry,
+    )
 
     manager.run(args.target, opts)
 
