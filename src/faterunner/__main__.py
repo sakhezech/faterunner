@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from typing import NoReturn, Sequence
 
-from . import parsers
+from . import Opts, parsers
 from .exceptions import GuessError
 
 _parsers: dict[str, parsers.Parser] = {
@@ -36,6 +36,7 @@ def guess_parser(file: Path) -> str:
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument('--parser', choices=_parsers.keys())
+    parser.add_argument('--dry', action='store_true')
     parser.add_argument('-f', '--file', type=Path)
     parser.add_argument('-l', '--list', action='store_true')
     parser.add_argument('target', nargs='?')
@@ -64,7 +65,9 @@ def cli(argv: Sequence[str] | None = None) -> None:
     if args.target is None:
         args.target = tuple(manager.tasks.keys())[0]
 
-    manager.run(args.target)
+    opts = Opts(dry=args.dry)
+
+    manager.run(args.target, opts)
 
 
 def print_and_exit(*values, exit_code: int = 1) -> NoReturn:

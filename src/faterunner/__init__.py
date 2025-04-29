@@ -10,6 +10,7 @@ class Opts:
     silent: bool | None = None
     ignore_err: bool | None = None
     keep_going: bool | None = None
+    dry: bool | None = None
 
     def __or__(self, other: 'Opts | None') -> 'Opts':
         if other is None:
@@ -35,6 +36,9 @@ class SubproccessAction:
 
     def run(self, opts: Opts | None = None) -> None:
         opts = self.opts | opts
+
+        if opts.dry:
+            return
 
         try:
             proc = subprocess.run(
