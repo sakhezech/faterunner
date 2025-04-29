@@ -1,8 +1,11 @@
 import dataclasses
+import logging
 import subprocess
 from typing import Iterable, MutableMapping, Protocol, Sequence
 
 from .exceptions import ActionError, DependencyError, FateError
+
+logger = logging.getLogger('faterunner')
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -37,6 +40,8 @@ class SubproccessAction:
     def run(self, opts: Opts | None = None) -> None:
         opts = self.opts | opts
 
+        # NOTE: not sure if this should be logged out or printed out
+        logger.info(' '.join(self.cmd))
         if opts.dry:
             return
 
@@ -54,7 +59,7 @@ class SubproccessAction:
             # so we have to log it here ourselves
             if not opts.ignore_err:
                 raise ActionError(err)
-            # TODO: logging here
+            logger.info(f'{err} (ignored)')
 
 
 class Task:
@@ -122,6 +127,7 @@ class Manager:
         for dep in deps:
             self._run(dep, opts, already_run, failed, exceptions)
 
+        # TODO: add which task was failed because of dependencies to errors
         try:
             failed_deps = [dep for dep in deps if dep in failed]
             if failed_deps:
@@ -145,7 +151,7 @@ class Manager:
         except (DependencyError, ActionError) as err:
             failed.add(name)
             exceptions.add(err)
-            # TODO: logging here
+            logger.error(err)
             if not opts.keep_going:
                 raise err
 

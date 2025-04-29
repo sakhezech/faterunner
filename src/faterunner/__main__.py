@@ -1,14 +1,27 @@
 import argparse
+import logging
 import sys
 from pathlib import Path
 from typing import NoReturn, Sequence
 
 from . import Opts, parsers
-from .exceptions import GuessError
+from .exceptions import FateError, GuessError
 
 _parsers: dict[str, parsers.Parser] = {
     'pyproject': parsers.PyprojectParser(),
 }
+
+
+logger = logging.getLogger('faterunner')
+
+
+def setup_logging() -> None:
+    # HACK: this setup is temporary
+    # TODO: change format depending on verbosity
+    logging.basicConfig(
+        format='%(name)s: [%(levelname)s] %(message)s',
+    )
+    logger.setLevel(logging.INFO)
 
 
 def guess_file_and_parser() -> tuple[Path, str]:
@@ -64,6 +77,7 @@ def make_parser() -> argparse.ArgumentParser:
 def cli(argv: Sequence[str] | None = None) -> None:
     parser = make_parser()
     args = parser.parse_args(argv)
+    setup_logging()
 
     try:
         if args.file is None and args.parser is None:
@@ -90,7 +104,10 @@ def cli(argv: Sequence[str] | None = None) -> None:
         dry=args.dry,
     )
 
-    manager.run(args.target, opts)
+    try:
+        manager.run(args.target, opts)
+    except FateError:
+        sys.exit(1)
 
 
 def print_and_exit(*values, exit_code: int = 1) -> NoReturn:
