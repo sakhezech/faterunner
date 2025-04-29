@@ -1,5 +1,4 @@
 import abc
-import shlex
 from pathlib import Path
 from typing import Mapping
 
@@ -47,7 +46,7 @@ class PyprojectParser(Parser):
         assert isinstance(tool_config['targets'], Mapping)
         for name, action_strings in tool_config['targets'].items():
             actions = [
-                SubproccessAction(shlex.split(action_string))
+                SubproccessAction(action_string)
                 for action_string in action_strings
             ]
             manager.add(name, Task(actions))

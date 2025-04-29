@@ -31,7 +31,7 @@ class Action(Protocol):
 
 
 class SubproccessAction:
-    def __init__(self, cmd: Sequence[str], opts: Opts | None = None) -> None:
+    def __init__(self, cmd: str, opts: Opts | None = None) -> None:
         if not opts:
             opts = Opts()
 
@@ -42,13 +42,13 @@ class SubproccessAction:
         opts = self.opts | opts
 
         # NOTE: not sure if this should be logged out or printed out
-        logger.info(shlex.join(self.cmd))
+        logger.info(self.cmd)
         if opts.dry:
             return
 
         try:
             proc = subprocess.run(
-                self.cmd,
+                shlex.split(self.cmd),
                 stdout=subprocess.DEVNULL if opts.silent else None,
                 stderr=subprocess.DEVNULL if opts.silent else None,
             )
