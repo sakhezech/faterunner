@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+import shlex
 import subprocess
 from typing import Iterable, MutableMapping, Protocol, Sequence
 
@@ -41,7 +42,7 @@ class SubproccessAction:
         opts = self.opts | opts
 
         # NOTE: not sure if this should be logged out or printed out
-        logger.info(' '.join(self.cmd))
+        logger.info(shlex.join(self.cmd))
         if opts.dry:
             return
 
