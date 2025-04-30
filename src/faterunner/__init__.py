@@ -1,6 +1,5 @@
 import dataclasses
 import logging
-import shlex
 import subprocess
 from typing import Iterable, MutableMapping, Protocol, Sequence
 
@@ -48,9 +47,10 @@ class SubprocessAction:
 
         try:
             proc = subprocess.run(
-                shlex.split(self.cmd),
+                self.cmd,
                 stdout=subprocess.DEVNULL if opts.silent else None,
                 stderr=subprocess.DEVNULL if opts.silent else None,
+                shell=True,
             )
             proc.check_returncode()
         except (OSError, subprocess.CalledProcessError) as err:
