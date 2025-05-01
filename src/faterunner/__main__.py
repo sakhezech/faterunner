@@ -12,7 +12,7 @@ _parsers: dict[str, parsers.Parser] = {
 }
 
 
-logger = logging.getLogger('faterunner')
+logger = logging.getLogger('faterunner.cli')
 
 
 def setup_logging() -> None:
@@ -21,7 +21,7 @@ def setup_logging() -> None:
     logging.basicConfig(
         format='%(name)s: [%(levelname)s] %(message)s',
     )
-    logger.setLevel(logging.INFO)
+    logging.getLogger('faterunner').setLevel(logging.DEBUG)
 
 
 def guess_file_and_parser() -> tuple[Path, str]:
@@ -82,10 +82,14 @@ def cli(argv: Sequence[str] | None = None) -> None:
     try:
         if args.file is None and args.parser is None:
             args.file, args.parser = guess_file_and_parser()
+            logger.debug(f'Guessed parser: {args.parser}')
+            logger.debug(f'Guessed file: {args.file}')
         elif args.file is None:
             args.file = guess_file(args.parser)
+            logger.debug(f'Guessed file: {args.file}')
         elif args.parser is None:
             args.parser = guess_parser(args.file)
+            logger.debug(f'Guessed parser: {args.parser}')
     except GuessError as err:
         print_and_exit(err.args[0])
 
@@ -96,6 +100,11 @@ def cli(argv: Sequence[str] | None = None) -> None:
 
     if args.target is None:
         args.target = tuple(manager.tasks.keys())[0]
+        logger.debug(f'Guessed target: {args.target}')
+
+    logger.debug(
+        f'File: {args.file}, Parser: {args.parser}, Target: {args.target}',
+    )
 
     opts = Opts(
         silent=args.silent,
@@ -103,6 +112,7 @@ def cli(argv: Sequence[str] | None = None) -> None:
         keep_going=args.keep_going,
         dry=args.dry,
     )
+    logger.debug(f'Force options: {opts}')
 
     try:
         manager.run(args.target, opts)

@@ -42,6 +42,7 @@ class SubprocessAction:
 
         # NOTE: not sure if this should be logged out or printed out
         logger.info(self.cmd)
+        logger.debug(f'Action options: {opts}')
         if opts.dry:
             return
 
@@ -75,6 +76,7 @@ class Task:
 
     def run(self, opts: Opts | None = None) -> None:
         opts = self.opts | opts
+        logger.debug(f'Task options: {opts}')
 
         for action in self.actions:
             _ = action.run(opts)
@@ -106,6 +108,7 @@ class Manager:
 
     def run(self, name: str, opts: Opts | None = None) -> None:
         opts = self.opts | opts
+        logger.debug(f'Manager options: {opts}')
 
         exceptions = self._run(name, opts, set(), set(), set())
         if exceptions:
@@ -121,19 +124,22 @@ class Manager:
         exceptions: set[Exception],
     ) -> set[Exception]:
         if name in already_run:
+            logger.debug(f'Skipping run or running task: {name}')
             return exceptions
         already_run.add(name)
+        logger.debug(f'Adding task to running: {name}')
 
         deps = self.deps.get(name, [])
         for dep in deps:
             self._run(dep, opts, already_run, failed, exceptions)
 
-        # TODO: add which task was failed because of dependencies to errors
+        logger.debug(f'Running task: {name}')
         try:
             failed_deps = [dep for dep in deps if dep in failed]
             if failed_deps:
                 raise DependencyError(
-                    f'dependencies failed: {" ".join(failed_deps)}'
+                    f"Dependencies failed for '{name}': "
+                    f'{" ".join(failed_deps)}'
                 )
 
             # NOTE: i don't know if we can even hit this condition
@@ -142,7 +148,8 @@ class Manager:
             not_run_deps = [dep for dep in deps if dep not in already_run]
             if not_run_deps:
                 raise DependencyError(
-                    f'dependencies not run: {" ".join(not_run_deps)}'
+                    f"Dependencies not run for '{name}': "
+                    f'{" ".join(not_run_deps)}'
                 )
             self.tasks[name].run(opts)
 
