@@ -40,7 +40,6 @@ class SubprocessAction:
     def run(self, opts: Opts | None = None) -> None:
         opts = self.opts | opts
 
-        # NOTE: not sure if this should be logged out or printed out
         logger.info(self.cmd)
         logger.debug(f'Action options: {opts}')
         if opts.dry:

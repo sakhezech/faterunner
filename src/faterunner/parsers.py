@@ -60,7 +60,6 @@ class PyprojectParser(Parser):
     # for example a pyproject.toml file can be our configuration file
     # if it has [tool.faterunner...] section, and if it doesn't we should
     # look elsewhere
-    # TODO: maybe rename, i am not sure
     def validate_choice(self, file: Path) -> bool:
         string = file.read_text()
         conf = tomllib.loads(string)
