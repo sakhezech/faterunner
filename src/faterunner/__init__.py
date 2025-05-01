@@ -1,7 +1,16 @@
+import contextlib
 import dataclasses
+import io
 import logging
 import subprocess
-from typing import Iterable, MutableMapping, Protocol, Sequence
+from typing import (
+    Callable,
+    Generator,
+    Iterable,
+    MutableMapping,
+    Protocol,
+    Sequence,
+)
 
 from .exceptions import ActionError, DependencyError, FateError
 
@@ -61,6 +70,49 @@ class SubprocessAction:
             if not opts.ignore_err:
                 raise ActionError(err)
             logger.info(f'{err} (ignored)')
+
+
+class FunctionAction[**P, T]:
+    def __init__(
+        self,
+        func: Callable[P, T],
+        opts: Opts | None = None,
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> None:
+        if not opts:
+            opts = Opts()
+
+        self.func = func
+        self.opts = opts
+        self.args = args
+        self.kwargs = kwargs
+
+    def run(self, opts: Opts | None = None) -> None:
+        opts = self.opts | opts
+
+        logger.info(self.func.__name__)
+        logger.debug(f'Action options: {opts}')
+        if opts.dry:
+            return
+
+        try:
+            if opts.silent:
+                context = self.redirect_stdout_stderr()
+            else:
+                context = contextlib.nullcontext()
+            with context:
+                self.func(*self.args, **self.kwargs)
+        except Exception as err:
+            if not opts.ignore_err:
+                raise ActionError(err)
+            logger.info(f'{err} (ignored)')
+
+    @contextlib.contextmanager
+    def redirect_stdout_stderr(self) -> Generator[None]:
+        with contextlib.redirect_stdout(io.StringIO()):
+            with contextlib.redirect_stderr(io.StringIO()):
+                yield
 
 
 class Task:
