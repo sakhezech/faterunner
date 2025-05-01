@@ -15,13 +15,13 @@ _parsers: dict[str, parsers.Parser] = {
 logger = logging.getLogger('faterunner.cli')
 
 
-def setup_logging() -> None:
+def setup_logging(level: str) -> None:
     # HACK: this setup is temporary
     # TODO: change format depending on verbosity
     logging.basicConfig(
         format='%(name)s: [%(levelname)s] %(message)s',
     )
-    logging.getLogger('faterunner').setLevel(logging.DEBUG)
+    logging.getLogger('faterunner').setLevel(level)
 
 
 def guess_file_and_parser() -> tuple[Path, str]:
@@ -70,6 +70,11 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument('--parser', choices=_parsers.keys())
     parser.add_argument('-f', '--file', type=Path)
     parser.add_argument('-l', '--list', action='store_true')
+    parser.add_argument(
+        '--logging',
+        default='INFO',
+        choices=logging.getLevelNamesMapping().keys(),
+    )
     parser.add_argument('target', nargs='?')
     return parser
 
@@ -77,7 +82,7 @@ def make_parser() -> argparse.ArgumentParser:
 def cli(argv: Sequence[str] | None = None) -> None:
     parser = make_parser()
     args = parser.parse_args(argv)
-    setup_logging()
+    setup_logging(args.logging)
 
     try:
         if args.file is None and args.parser is None:
