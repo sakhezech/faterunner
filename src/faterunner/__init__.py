@@ -1,3 +1,4 @@
+import abc
 import contextlib
 import dataclasses
 import io
@@ -8,7 +9,6 @@ from typing import (
     Generator,
     Iterable,
     MutableMapping,
-    Protocol,
     Sequence,
 )
 
@@ -32,37 +32,26 @@ class Opts:
         return self.__class__(**new_dict)
 
 
-class Action(Protocol):
+class Action(abc.ABC):
     opts: Opts
 
-    def run(self, opts: Opts | None = None) -> None: ...
+    @abc.abstractmethod
+    def _run(self, opts: Opts) -> None: ...
 
-
-class SubprocessAction:
-    def __init__(self, cmd: str, opts: Opts | None = None) -> None:
-        if not opts:
-            opts = Opts()
-
-        self.cmd = cmd
-        self.opts = opts
+    @abc.abstractmethod
+    def action_repr(self) -> str: ...
 
     def run(self, opts: Opts | None = None) -> None:
         opts = self.opts | opts
 
-        logger.info(self.cmd)
+        logger.info(self.action_repr())
         logger.debug(f'Action options: {opts}')
         if opts.dry:
             return
 
         try:
-            proc = subprocess.run(
-                self.cmd,
-                stdout=subprocess.DEVNULL if opts.silent else None,
-                stderr=subprocess.DEVNULL if opts.silent else None,
-                shell=True,
-            )
-            proc.check_returncode()
-        except (OSError, subprocess.CalledProcessError) as err:
+            self._run(opts)
+        except Exception as err:
             # because ignore_err is supposed to suppress any error in execution
             # we have to deal with it here
             # i.e. we can't let it go to Manager._run where all the logging is
@@ -72,7 +61,28 @@ class SubprocessAction:
             logger.info(f'{err} (ignored)')
 
 
-class FunctionAction[**P, T]:
+class SubprocessAction(Action):
+    def __init__(self, cmd: str, opts: Opts | None = None) -> None:
+        if not opts:
+            opts = Opts()
+
+        self.cmd = cmd
+        self.opts = opts
+
+    def action_repr(self) -> str:
+        return self.cmd
+
+    def _run(self, opts: Opts) -> None:
+        proc = subprocess.run(
+            self.cmd,
+            stdout=subprocess.DEVNULL if opts.silent else None,
+            stderr=subprocess.DEVNULL if opts.silent else None,
+            shell=True,
+        )
+        proc.check_returncode()
+
+
+class FunctionAction[**P, T](Action):
     def __init__(
         self,
         func: Callable[P, T],
@@ -88,25 +98,16 @@ class FunctionAction[**P, T]:
         self.args = args
         self.kwargs = kwargs
 
-    def run(self, opts: Opts | None = None) -> None:
-        opts = self.opts | opts
+    def action_repr(self) -> str:
+        return self.func.__name__
 
-        logger.info(self.func.__name__)
-        logger.debug(f'Action options: {opts}')
-        if opts.dry:
-            return
-
-        try:
-            if opts.silent:
-                context = self.redirect_stdout_stderr()
-            else:
-                context = contextlib.nullcontext()
-            with context:
-                self.func(*self.args, **self.kwargs)
-        except Exception as err:
-            if not opts.ignore_err:
-                raise ActionError(err)
-            logger.info(f'{err} (ignored)')
+    def _run(self, opts: Opts) -> None:
+        if opts.silent:
+            context = self.redirect_stdout_stderr()
+        else:
+            context = contextlib.nullcontext()
+        with context:
+            self.func(*self.args, **self.kwargs)
 
     @contextlib.contextmanager
     def redirect_stdout_stderr(self) -> Generator[None]:
