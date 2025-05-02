@@ -1,4 +1,5 @@
 import argparse
+import importlib.metadata
 import logging
 import sys
 from pathlib import Path
@@ -8,6 +9,12 @@ from . import Opts, parsers
 from .exceptions import FateError, GuessError
 
 _parsers: dict[str, parsers.Parser] = {
+    **{
+        entry_point.name: entry_point.load()()
+        for entry_point in importlib.metadata.entry_points(
+            group='faterunner.parsers'
+        )
+    },
     'pyproject': parsers.PyprojectParser(),
 }
 
