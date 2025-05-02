@@ -44,12 +44,20 @@ class PyprojectParser(Parser):
         manager = Manager(opts=opts)
 
         assert isinstance(tool_config['targets'], Mapping)
-        for name, action_strings in tool_config['targets'].items():
-            actions = [
-                SubprocessAction(action_string)
-                for action_string in action_strings
-            ]
-            manager.add(name, Task(actions))
+        for name, task_content in tool_config['targets'].items():
+            if isinstance(task_content, list):
+                actions = [SubprocessAction(cmd) for cmd in task_content]
+                manager.add(name, Task(actions))
+            elif isinstance(task_content, Mapping):
+                commands = task_content.get('commands', [])
+                opts = Opts(**task_content.get('options', {}))
+                deps = task_content.get('dependencies', [])
+
+                actions = [SubprocessAction(cmd) for cmd in commands]
+                manager.add(name, Task(actions, opts))
+                manager.deps[name] = deps
+            else:
+                raise TypeError(f'Target not list or mapping: {name}')
 
         return manager
 
