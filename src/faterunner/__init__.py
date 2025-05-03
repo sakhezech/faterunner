@@ -41,11 +41,15 @@ class Action(abc.ABC):
     @abc.abstractmethod
     def action_repr(self) -> str: ...
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.action_repr().__repr__()})'
+
     def run(self, opts: Opts | None = None) -> None:
         opts = self.opts | opts
 
-        logger.info(self.action_repr())
+        logger.debug(f'Current action: {self}')
         logger.debug(f'Action options: {opts}')
+        logger.info(self.action_repr())
         if opts.dry:
             return
 
@@ -176,16 +180,19 @@ class Manager:
         exceptions: set[Exception],
     ) -> set[Exception]:
         if name in already_run:
-            logger.debug(f'Skipping run or running task: {name}')
+            logger.debug(f'Skipping deduped task: {name}')
             return exceptions
         already_run.add(name)
-        logger.debug(f'Adding task to running: {name}')
+        logger.debug(f'Adding task to dedupe: {name}')
 
         deps = self.deps.get(name, [])
+        if deps:
+            logger.debug(f"Dependencies for '{name}': {' '.join(deps)}")
         for dep in deps:
+            logger.debug(f"Running dependency for '{name}': {dep}")
             self._run(dep, opts, already_run, failed, exceptions)
 
-        logger.debug(f'Running task: {name}')
+        logger.debug(f'Current task: {name}')
         try:
             failed_deps = [dep for dep in deps if dep in failed]
             if failed_deps:
