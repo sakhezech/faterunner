@@ -166,7 +166,7 @@ class Manager:
         opts = self.opts | opts
         logger.debug(f'Manager options: {opts}')
 
-        exceptions = self._run(name, opts, set(), set(), set())
+        exceptions = self._run(name, opts)
         if exceptions:
             # TODO: raise other type of err
             raise FateError(*exceptions)
@@ -175,10 +175,14 @@ class Manager:
         self,
         name: str,
         opts: Opts,
-        already_run: set[str],
-        failed: set[str],
-        exceptions: set[Exception],
+        already_run: set[str] | None = None,
+        failed: set[str] | None = None,
+        exceptions: set[Exception] | None = None,
     ) -> set[Exception]:
+        already_run = already_run if already_run is not None else set()
+        failed = failed if failed is not None else set()
+        exceptions = exceptions if exceptions is not None else set()
+
         if name in already_run:
             logger.debug(f'Skipping deduped task: {name}')
             return exceptions
