@@ -39,17 +39,14 @@ class Action(abc.ABC):
     def _run(self, opts: Opts) -> None: ...
 
     @abc.abstractmethod
-    def action_repr(self) -> str: ...
-
-    def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self.action_repr().__repr__()})'
+    def get_name(self) -> str: ...
 
     def run(self, opts: Opts | None = None) -> None:
         opts = self.opts | opts
 
         logger.debug(f'Current action: {self}')
         logger.debug(f'Action options: {opts}')
-        logger.info(self.action_repr())
+        logger.info(self.get_name())
         if opts.dry:
             return
 
@@ -73,8 +70,11 @@ class SubprocessAction(Action):
         self.cmd = cmd
         self.opts = opts
 
-    def action_repr(self) -> str:
+    def get_name(self) -> str:
         return self.cmd
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({repr(self.cmd)})'
 
     def _run(self, opts: Opts) -> None:
         proc = subprocess.run(
@@ -102,8 +102,11 @@ class FunctionAction[**P, T](Action):
         self.args = args
         self.kwargs = kwargs
 
-    def action_repr(self) -> str:
+    def get_name(self) -> str:
         return self.func.__name__
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({repr(self.func)})'
 
     def _run(self, opts: Opts) -> None:
         if opts.silent:
