@@ -1,9 +1,10 @@
 import abc
 import contextlib
 import dataclasses
-import io
 import logging
+import os
 import subprocess
+import sys
 from typing import (
     Callable,
     Generator,
@@ -50,8 +51,16 @@ class Action(abc.ABC):
         if opts.dry:
             return
 
+        if opts.silent:
+            output_redirect = self.redirect_stdout_stderr()
+        else:
+            output_redirect = contextlib.nullcontext()
         try:
-            self._run(opts)
+            # NOTE: if you want you can capture output in silent
+            # instead of devnull'ing it and attach it to the err if raised
+            with output_redirect:
+                self._run(opts)
+
         except Exception as err:
             # because ignore_err is supposed to suppress any error in execution
             # we have to deal with it here
@@ -60,6 +69,16 @@ class Action(abc.ABC):
             if not opts.ignore_err:
                 raise ActionError(err)
             logger.info(f'{err} (ignored)')
+
+    @contextlib.contextmanager
+    def redirect_stdout_stderr(self) -> Generator[None]:
+        with (
+            open(os.devnull, 'w') as nullout,
+            open(os.devnull, 'w') as nullerr,
+        ):
+            with contextlib.redirect_stdout(nullout):
+                with contextlib.redirect_stderr(nullerr):
+                    yield
 
 
 class SubprocessAction(Action):
@@ -77,10 +96,11 @@ class SubprocessAction(Action):
         return f'{self.__class__.__name__}({repr(self.cmd)})'
 
     def _run(self, opts: Opts) -> None:
+        _ = opts
         proc = subprocess.run(
             self.cmd,
-            stdout=subprocess.DEVNULL if opts.silent else None,
-            stderr=subprocess.DEVNULL if opts.silent else None,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
             shell=True,
         )
         proc.check_returncode()
@@ -109,18 +129,8 @@ class FunctionAction[**P, T](Action):
         return f'{self.__class__.__name__}({repr(self.func)})'
 
     def _run(self, opts: Opts) -> None:
-        if opts.silent:
-            context = self.redirect_stdout_stderr()
-        else:
-            context = contextlib.nullcontext()
-        with context:
-            self.func(*self.args, **self.kwargs)
-
-    @contextlib.contextmanager
-    def redirect_stdout_stderr(self) -> Generator[None]:
-        with contextlib.redirect_stdout(io.StringIO()):
-            with contextlib.redirect_stderr(io.StringIO()):
-                yield
+        _ = opts
+        self.func(*self.args, **self.kwargs)
 
 
 class Task:
