@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/sakhezech/faterunner/actions/workflows/ci.yaml/badge.svg)](https://github.com/sakhezech/faterunner/actions/workflows/ci.yaml)
 
-The fate of a task if to be run.
+The fate of a task is to be run.
 
 Or "F.. A.. Task Execution Runner". (TODO: backronym)
 
@@ -32,7 +32,7 @@ format = ['ruff check --fix .', 'ruff format .']
 [tool.faterunner.targets.docker-build]
 commands = ['docker build -t my-project:$(git rev-parse HEAD) .'] # interpolation
 [tool.faterunner.targets.docker-run]
-dependencies = ['build'] # will run only if `build` succeeded
+dependencies = ['docker-build'] # will run only if `docker-build` succeeded
 commands = ['docker run --rm -p 5000:5000 my-project:$(git rev-parse HEAD)']
 
 [tool.faterunner.targets.check-and-format]
