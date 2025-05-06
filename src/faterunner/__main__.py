@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import NoReturn, Sequence
 
 from . import Opts, parsers
-from .exceptions import FateError, GuessError
 
 _parsers: dict[str, parsers.Parser] = {
     **{
@@ -39,21 +38,21 @@ def guess_file_and_parser() -> tuple[Path, str]:
         file = parser.find_config_file()
         if file:
             return file, name
-    raise GuessError("couldn't guess file and parser")
+    raise RuntimeError("couldn't guess file and parser")
 
 
 def guess_file(parser: str) -> Path:
     file = _parsers[parser].find_config_file()
     if file:
         return file
-    raise GuessError(f"couldn't guess the file for parser: {parser}")
+    raise RuntimeError(f"couldn't guess the file for parser: {parser}")
 
 
 def guess_parser(file: Path) -> str:
     for name, parser in _parsers.items():
         if parser.validate_file_name(file):
             return name
-    raise GuessError(f"couldn't guess the parser for file: {file}")
+    raise RuntimeError(f"couldn't guess the parser for file: {file}")
 
 
 def make_parser() -> argparse.ArgumentParser:
@@ -106,7 +105,7 @@ def cli(argv: Sequence[str] | None = None) -> None:
         elif args.parser is None:
             args.parser = guess_parser(args.file)
             logger.debug(f'Guessed parser: {args.parser}')
-    except GuessError as err:
+    except RuntimeError as err:
         print_and_exit(err.args[0])
 
     manager = _parsers[args.parser].parse(args.file.read_text())
@@ -132,7 +131,7 @@ def cli(argv: Sequence[str] | None = None) -> None:
 
     try:
         manager.run(args.target, opts)
-    except FateError:
+    except Exception:
         sys.exit(1)
 
 

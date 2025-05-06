@@ -5,15 +5,7 @@ import logging
 import os
 import subprocess
 import sys
-from typing import (
-    Callable,
-    Generator,
-    Iterable,
-    MutableMapping,
-    Sequence,
-)
-
-from .exceptions import ActionError, DependencyError, FateError
+from typing import Callable, Generator, Iterable, MutableMapping, Sequence
 
 logger = logging.getLogger('faterunner')
 
@@ -67,7 +59,7 @@ class Action(abc.ABC):
             # i.e. we can't let it go to Manager._run where all the logging is
             # so we have to log it here ourselves
             if not opts.ignore_err:
-                raise ActionError(err)
+                raise err
             logger.info(f'{err} (ignored)')
 
     @contextlib.contextmanager
@@ -181,8 +173,7 @@ class Manager:
 
         exceptions = self._run(name, opts)
         if exceptions:
-            # TODO: raise other type of err
-            raise FateError(*exceptions)
+            raise RuntimeError(*exceptions)
 
     def _run(
         self,
@@ -211,9 +202,12 @@ class Manager:
 
         logger.debug(f'Current task: {name}')
         try:
+            if name not in self.tasks:
+                raise KeyError(f'No such task: {name}')
+
             failed_deps = [dep for dep in deps if dep in failed]
             if failed_deps:
-                raise DependencyError(
+                raise RuntimeError(
                     f"Dependencies failed for '{name}': "
                     f'{" ".join(failed_deps)}'
                 )
@@ -223,7 +217,7 @@ class Manager:
             # we can't run a task if the deps are not satisfied
             not_run_deps = [dep for dep in deps if dep not in already_run]
             if not_run_deps:
-                raise DependencyError(
+                raise RuntimeError(
                     f"Dependencies not run for '{name}': "
                     f'{" ".join(not_run_deps)}'
                 )
@@ -232,7 +226,7 @@ class Manager:
         # NOTE: i think all the error logging should be done here
         # at least for all errors that are supposed to crash
         # i.e. not ignore_err errors
-        except (DependencyError, ActionError) as err:
+        except Exception as err:
             failed.add(name)
             exceptions.add(err)
             logger.error(err)
