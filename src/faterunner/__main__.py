@@ -56,36 +56,60 @@ def guess_parser(file: Path) -> str:
 
 
 def make_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='the fate of a task is to be run'
+    )
 
     opts_group = parser.add_argument_group()
     opts_group.add_argument(
         '--silent',
         action=argparse.BooleanOptionalAction,
+        help='suppress output',
     )
     opts_group.add_argument(
         '--ignore-err',
         action=argparse.BooleanOptionalAction,
+        help='ignore any error',
     )
     opts_group.add_argument(
         '--keep-going',
         action=argparse.BooleanOptionalAction,
+        help='keep running tasks even if some cannot be done',
     )
     opts_group.add_argument(
         '--dry',
         action=argparse.BooleanOptionalAction,
+        help='do not execute actions',
     )
 
-    parser.add_argument('--parser', choices=_parsers.keys())
-    parser.add_argument('-f', '--file', type=Path)
-    parser.add_argument('-l', '--list', action='store_true')
+    parser.add_argument(
+        '--parser',
+        choices=_parsers.keys(),
+        help='parser to use (defaults to a guess)',
+    )
+    parser.add_argument(
+        '-f',
+        '--file',
+        type=Path,
+        help='configuration file (defaults to a guess)',
+    )
+    parser.add_argument(
+        '-l', '--list', action='store_true', help='print all tasks and exit'
+    )
     parser.add_argument(
         '--logging',
         default='INFO',
         choices=logging.getLevelNamesMapping().keys(),
+        help='logging level (defaults to INFO)',
     )
-    parser.add_argument('-V', action='count', dest='verbosity', default=0)
-    parser.add_argument('target', nargs='?')
+    parser.add_argument(
+        '-V',
+        action='count',
+        dest='verbosity',
+        default=0,
+        help='logging verbosity (more Vs more info)',
+    )
+    parser.add_argument('target', nargs='?', help='task to execute')
     return parser
 
 
