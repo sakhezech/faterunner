@@ -1,5 +1,7 @@
 # Faterunner
 
+[![CI](https://github.com/sakhezech/faterunner/actions/workflows/ci.yaml/badge.svg)](https://github.com/sakhezech/faterunner/actions/workflows/ci.yaml)
+
 The fate of a task if to be run.
 
 Or "F.. A.. Task Execution Runner". (TODO: backronym)
