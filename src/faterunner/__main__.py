@@ -155,7 +155,7 @@ def cli(argv: Sequence[str] | None = None) -> None:
 
     try:
         manager.run(args.target, opts)
-    except Exception:
+    except (Exception, KeyboardInterrupt):
         sys.exit(1)
 
 

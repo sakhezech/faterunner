@@ -237,6 +237,9 @@ class Manager:
         # NOTE: i think all the error logging should be done here
         # at least for all errors that are supposed to crash
         # i.e. not ignore_err errors
+        except KeyboardInterrupt as err:
+            logger.error('Keyboard Interrupt')
+            raise err
         except Exception as err:
             failed.add(name)
             exceptions.add(err)
