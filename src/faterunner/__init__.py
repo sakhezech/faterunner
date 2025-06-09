@@ -5,9 +5,20 @@ import logging
 import os
 import subprocess
 import sys
-from typing import Callable, Generator, Iterable, MutableMapping, Sequence
+from typing import (
+    Callable,
+    Generator,
+    Generic,
+    Iterable,
+    MutableMapping,
+    ParamSpec,
+    Sequence,
+    TypeVar,
+)
 
 logger = logging.getLogger('faterunner')
+T = TypeVar('T')
+P = ParamSpec('P')
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -63,7 +74,7 @@ class Action(abc.ABC):
             logger.info(f'{err} (ignored)')
 
     @contextlib.contextmanager
-    def redirect_stdout_stderr(self) -> Generator[None]:
+    def redirect_stdout_stderr(self) -> Generator[None, None, None]:
         with (
             open(os.devnull, 'w') as nullout,
             open(os.devnull, 'w') as nullerr,
@@ -98,7 +109,7 @@ class SubprocessAction(Action):
         proc.check_returncode()
 
 
-class FunctionAction[**P, T](Action):
+class FunctionAction(Action, Generic[P, T]):
     def __init__(
         self,
         func: Callable[P, T],
