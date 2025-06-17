@@ -130,7 +130,8 @@ def cli(argv: Sequence[str] | None = None) -> None:
             args.parser = guess_parser(args.file)
             logger.debug(f'Guessed parser: {args.parser}')
     except RuntimeError as err:
-        print_and_exit(err.args[0])
+        logger.critical(err.args[0])
+        sys.exit(1)
 
     manager = _parsers[args.parser].parse(args.file.read_text())
 
