@@ -11,13 +11,11 @@ class Parser(abc.ABC):
     @abc.abstractmethod
     def parse(self, string: str) -> Manager: ...
     @abc.abstractmethod
-    def validate_file_name(self, file: Path) -> bool: ...
-    @abc.abstractmethod
-    def validate_choice(self, file: Path) -> bool: ...
+    def validate_file(self, file: Path) -> bool: ...
 
     def find_config_file(self) -> Path | None:
         for file in Path.cwd().iterdir():
-            if self.validate_file_name(file) and self.validate_choice(file):
+            if self.validate_file(file):
                 return file
         return None
 
@@ -61,14 +59,13 @@ class PyprojectParser(Parser):
 
         return manager
 
-    def validate_file_name(self, file: Path) -> bool:
-        return file.name == 'pyproject.toml'
-
     # validates if this is the file we want to choose
     # for example a pyproject.toml file can be our configuration file
     # if it has [tool.faterunner...] section, and if it doesn't we should
     # look elsewhere
-    def validate_choice(self, file: Path) -> bool:
+    def validate_file(self, file: Path) -> bool:
+        if file.name != 'pyproject.toml':
+            return False
         string = file.read_text()
         conf = tomllib.loads(string)
         return 'tool' in conf and self.tool_name in conf['tool']

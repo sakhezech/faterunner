@@ -50,7 +50,7 @@ def guess_file(parser: str) -> Path:
 
 def guess_parser(file: Path) -> str:
     for name, parser in _parsers.items():
-        if parser.validate_file_name(file):
+        if parser.validate_file(file):
             return name
     raise RuntimeError(f"couldn't guess the parser for file: {file}")
 
