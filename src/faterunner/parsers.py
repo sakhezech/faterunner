@@ -13,8 +13,8 @@ class Parser(abc.ABC):
     @abc.abstractmethod
     def validate_file(self, file: Path) -> bool: ...
 
-    def find_config_file(self) -> Path | None:
-        for file in Path.cwd().iterdir():
+    def find_config_file(self, root_path: Path) -> Path | None:
+        for file in root_path.iterdir():
             if self.validate_file(file):
                 return file
         return None

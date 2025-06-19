@@ -35,14 +35,14 @@ def setup_logging(level: str, verbosity: int = 0) -> None:
 
 def guess_file_and_parser() -> tuple[Path, str]:
     for name, parser in _parsers.items():
-        file = parser.find_config_file()
+        file = parser.find_config_file(Path.cwd())
         if file:
             return file, name
     raise RuntimeError("couldn't guess file and parser")
 
 
 def guess_file(parser: str) -> Path:
-    file = _parsers[parser].find_config_file()
+    file = _parsers[parser].find_config_file(Path.cwd())
     if file:
         return file
     raise RuntimeError(f"couldn't guess the file for parser: {parser}")
