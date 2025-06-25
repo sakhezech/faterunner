@@ -1,8 +1,7 @@
 import abc
+import tomllib
 from pathlib import Path
 from typing import Mapping
-
-import tomllib
 
 from . import Manager, Opts, SubprocessAction, Task
 
