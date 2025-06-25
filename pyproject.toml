@@ -1,14 +1,32 @@
 [project]
 name = 'faterunner'
+description = 'F.. A.. Task Execution Runner'
 readme = 'README.md'
 license = 'MIT'
+requires-python = ">= 3.11"
 dynamic = ['version']
+classifiers = [
+  'Development Status :: 3 - Alpha',
+  'License :: OSI Approved :: MIT License',
+  'Programming Language :: Python :: 3 :: Only',
+  'Programming Language :: Python :: 3.11',
+  'Programming Language :: Python :: 3.12',
+  'Programming Language :: Python :: 3.13',
+  'Programming Language :: Python :: 3.14',
+  'Intended Audience :: Developers',
+  'Topic :: Software Development :: Build Tools',
+  'Topic :: Utilities',
+  'Typing :: Typed',
+]
 
 [project.optional-dependencies]
 dev = ['ruff']
 
 [project.scripts]
 fate = 'faterunner.__main__:cli'
+
+[project.urls]
+Homepage = 'https://github.com/sakhezech/faterunner'
 
 [tool.ruff]
 line-length = 79
