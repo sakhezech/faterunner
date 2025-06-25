@@ -151,7 +151,7 @@ class Task:
         logger.debug(f'Task options: {opts}')
 
         for action in self.actions:
-            _ = action.run(opts)
+            action.run(opts)
 
 
 class Manager:
