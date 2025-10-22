@@ -3,6 +3,7 @@ import contextlib
 import dataclasses
 import logging
 import os
+import shlex
 import subprocess
 import sys
 from typing import (
@@ -27,6 +28,8 @@ class Opts:
     ignore_err: bool | None = None
     keep_going: bool | None = None
     dry: bool | None = None
+
+    shell: bool | None = None
 
     def __or__(self, other: 'Opts | None') -> 'Opts':
         if other is None:
@@ -99,12 +102,13 @@ class SubprocessAction(Action):
         return f'{self.__class__.__name__}({repr(self.cmd)})'
 
     def _run(self, opts: Opts) -> None:
-        _ = opts
+        shell = bool(opts.shell)
+        cmd = self.cmd if shell else shlex.split(self.cmd)
         proc = subprocess.run(
-            self.cmd,
+            cmd,
             stdout=sys.stdout,
             stderr=sys.stderr,
-            shell=True,
+            shell=shell,
         )
         proc.check_returncode()
 
