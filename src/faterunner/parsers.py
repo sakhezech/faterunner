@@ -51,8 +51,7 @@ class PyprojectParser(Parser):
                 deps = task_content.dependencies or []
 
                 actions = [SubprocessAction(cmd) for cmd in commands]
-                manager.add(name, Task(actions, opts))
-                manager.deps[name] = deps
+                manager.add(name, Task(actions, opts), deps)
             else:
                 raise TypeError(f'Target not list or mapping: {name}')
 
