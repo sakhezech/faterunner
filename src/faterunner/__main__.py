@@ -87,6 +87,7 @@ def make_parser() -> argparse.ArgumentParser:
         '-v', '--version', action='version', version=__version__
     )
     parser.add_argument(
+        '-p',
         '--parser',
         choices=_parsers.keys(),
         help='parser to use (defaults to a guess)',
