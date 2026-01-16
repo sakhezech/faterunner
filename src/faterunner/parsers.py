@@ -1,7 +1,8 @@
 import abc
 import tomllib
 from pathlib import Path
-from typing import Mapping
+
+from pydantic import BaseModel
 
 from . import Manager, Opts, SubprocessAction, Task
 
@@ -20,35 +21,34 @@ class Parser(abc.ABC):
 
 
 class PyprojectParser(Parser):
+    class Target(BaseModel):
+        commands: list[str] | None = None
+        options: Opts | None = None
+        dependencies: list[str] | None = None
+
+    class Config(BaseModel):
+        options: Opts | None = None
+        targets: dict[str, 'list[str] | PyprojectParser.Target']
+
     def __init__(self, tool_name: str = 'faterunner') -> None:
         self.tool_name = tool_name
 
-    # TODO: change assert to normal check and exceptions
     def parse(self, string: str) -> Manager:
-        conf = tomllib.loads(string)
+        pyproject = tomllib.loads(string)
 
-        assert 'tool' in conf
-        assert self.tool_name in conf['tool']
+        if 'tool' not in pyproject or self.tool_name not in pyproject['tool']:
+            raise ValueError
 
-        tool_config = conf['tool'][self.tool_name]
-        assert isinstance(tool_config, Mapping)
-
-        if 'options' in tool_config:
-            assert isinstance(tool_config['options'], Mapping)
-            opts = Opts(**tool_config['options'])
-        else:
-            opts = None
-        manager = Manager(opts=opts)
-
-        assert isinstance(tool_config['targets'], Mapping)
-        for name, task_content in tool_config['targets'].items():
+        config = self.Config.model_validate(pyproject['tool'][self.tool_name])
+        manager = Manager(opts=config.options)
+        for name, task_content in config.targets.items():
             if isinstance(task_content, list):
                 actions = [SubprocessAction(cmd) for cmd in task_content]
                 manager.add(name, Task(actions))
-            elif isinstance(task_content, Mapping):
-                commands = task_content.get('commands', [])
-                opts = Opts(**task_content.get('options', {}))
-                deps = task_content.get('dependencies', [])
+            elif isinstance(task_content, self.Target):
+                commands = task_content.commands or []
+                opts = task_content.options
+                deps = task_content.dependencies or []
 
                 actions = [SubprocessAction(cmd) for cmd in commands]
                 manager.add(name, Task(actions, opts))
