@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import NoReturn, Sequence
 
 from . import Opts, parsers
+from .__version__ import __version__
 
 _parsers: dict[str, parsers.Parser] = {
     **{
@@ -82,6 +83,9 @@ def make_parser() -> argparse.ArgumentParser:
         help='do not execute actions',
     )
 
+    parser.add_argument(
+        '-v', '--version', action='version', version=__version__
+    )
     parser.add_argument(
         '--parser',
         choices=_parsers.keys(),
