@@ -201,24 +201,27 @@ class Manager:
         already_run = already_run if already_run is not None else set()
         failed = failed if failed is not None else set()
         exceptions = exceptions if exceptions is not None else set()
-
-        if name in already_run:
-            logger.debug(f'Skipping deduped task: {name}')
-            return exceptions
-        already_run.add(name)
-        logger.debug(f'Adding task to dedupe: {name}')
-
-        deps = self.deps.get(name, [])
-        if deps:
-            logger.debug(f"Dependencies for '{name}': {' '.join(deps)}")
-        for dep in deps:
-            logger.debug(f"Running dependency for '{name}': {dep}")
-            self._run(dep, opts, already_run, failed, exceptions)
-
-        logger.debug(f'Current task: {name}')
         try:
             if name not in self.tasks:
                 raise KeyError(f'No such task: {name}')
+            task = self.tasks[name]
+
+            if name in already_run:
+                logger.debug(f'Skipping deduped task: {name}')
+                return exceptions
+            already_run.add(name)
+            logger.debug(f'Adding task to dedupe: {name}')
+
+            deps = self.deps.get(name, [])
+            if deps:
+                logger.debug(f"Dependencies for '{name}': {' '.join(deps)}")
+            for dep in deps:
+                logger.debug(f"Running dependency for '{name}': {dep}")
+                self._run(
+                    dep, (task.opts | opts), already_run, failed, exceptions
+                )
+
+            logger.debug(f'Current task: {name}')
 
             failed_deps = [dep for dep in deps if dep in failed]
             if failed_deps:
@@ -236,7 +239,7 @@ class Manager:
                     f"Dependencies not run for '{name}': "
                     f'{" ".join(not_run_deps)}'
                 )
-            self.tasks[name].run(opts)
+            task.run(opts)
 
         # NOTE: i think all the error logging should be done here
         # at least for all errors that are supposed to crash
