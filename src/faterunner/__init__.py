@@ -162,6 +162,7 @@ class Task:
         self, opts: Opts | None = None, bg_opts: Opts | None = None
     ) -> None:
         bg_opts = bg_opts | self.opts
+        logger.debug(f'Current task: {self}')
         logger.debug(f'Task background options: {bg_opts}')
         logger.debug(f'Task force options: {opts}')
 
@@ -236,7 +237,7 @@ class Manager:
                     exceptions,
                 )
 
-            logger.debug(f'Current task: {name}')
+            logger.debug(f'Start task: {name}')
 
             failed_deps = [dep for dep in deps if dep in failed]
             if failed_deps:
