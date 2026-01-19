@@ -38,6 +38,9 @@ class Opts:
         new_dict = self.__dict__ | update
         return self.__class__(**new_dict)
 
+    def __ror__(self, _: None) -> 'Opts':
+        return self.__class__(**self.__dict__)
+
 
 class Action(abc.ABC):
     opts: Opts
@@ -48,11 +51,16 @@ class Action(abc.ABC):
     @abc.abstractmethod
     def get_name(self) -> str: ...
 
-    def run(self, opts: Opts | None = None) -> None:
-        opts = self.opts | opts
-
+    def run(
+        self, opts: Opts | None = None, bg_opts: Opts | None = None
+    ) -> None:
         logger.debug(f'Current action: {self}')
-        logger.debug(f'Action options: {opts}')
+        logger.debug(f'Action background options: {bg_opts | self.opts}')
+        logger.debug(f'Action force options: {opts}')
+
+        opts = bg_opts | self.opts | opts
+
+        logger.debug(f'Action final options: {opts}')
         logger.info(self.get_name())
         if opts.dry:
             return
@@ -150,12 +158,15 @@ class Task:
         self.actions = actions
         self.opts = opts
 
-    def run(self, opts: Opts | None = None) -> None:
-        opts = self.opts | opts
-        logger.debug(f'Task options: {opts}')
+    def run(
+        self, opts: Opts | None = None, bg_opts: Opts | None = None
+    ) -> None:
+        bg_opts = bg_opts | self.opts
+        logger.debug(f'Task background options: {bg_opts}')
+        logger.debug(f'Task force options: {opts}')
 
         for action in self.actions:
-            action.run(opts)
+            action.run(opts, bg_opts)
 
 
 class Manager:
@@ -183,8 +194,8 @@ class Manager:
         self.deps[name] = deps
 
     def run(self, name: str, opts: Opts | None = None) -> None:
-        opts = self.opts | opts
-        logger.debug(f'Manager options: {opts}')
+        logger.debug(f'Manager background options: {self.opts}')
+        logger.debug(f'Manager force options: {opts}')
 
         exceptions = self._run(name, opts)
         if exceptions:
@@ -193,7 +204,7 @@ class Manager:
     def _run(
         self,
         name: str,
-        opts: Opts,
+        opts: Opts | None,
         already_run: set[str] | None = None,
         failed: set[str] | None = None,
         exceptions: set[Exception] | None = None,
@@ -218,7 +229,11 @@ class Manager:
             for dep in deps:
                 logger.debug(f"Running dependency for '{name}': {dep}")
                 self._run(
-                    dep, (task.opts | opts), already_run, failed, exceptions
+                    dep,
+                    (task.opts | opts),
+                    already_run,
+                    failed,
+                    exceptions,
                 )
 
             logger.debug(f'Current task: {name}')
@@ -239,7 +254,7 @@ class Manager:
                     f"Dependencies not run for '{name}': "
                     f'{" ".join(not_run_deps)}'
                 )
-            task.run(opts)
+            task.run(opts, self.opts)
 
         # NOTE: i think all the error logging should be done here
         # at least for all errors that are supposed to crash
@@ -251,7 +266,7 @@ class Manager:
             failed.add(name)
             exceptions.add(err)
             logger.error(err)
-            if not opts.keep_going:
+            if not (self.opts | opts).keep_going:
                 raise err
 
         return exceptions
